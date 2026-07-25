@@ -9,6 +9,10 @@
   --orange: #fb651e;
   --orange-dark: #d94f0e;
   --orange-soft: #fff1e9;
+
+  /* Tells the browser to render native controls and scrollbars for a light
+     surface, which fixes washed-out selects and inputs on Windows. */
+  color-scheme: light;
 }
 
 @theme inline {
@@ -31,11 +35,35 @@ body {
   font-size: 1rem;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  /* Removes the 300ms double-tap zoom delay without disabling pinch zoom. */
+  touch-action: manipulation;
 }
 
 ::selection {
   background: var(--orange);
   color: #fff;
+}
+
+/* One focus treatment for everything interactive. :focus-visible so a mouse
+   click doesn't leave a ring behind, but keyboard navigation always does. */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Headings shouldn't strand a single word on the last line. */
+h1, h2, h3, h4 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Times and counts line up in columns when digits are the same width. */
+.tnum {
+  font-variant-numeric: tabular-nums;
 }
 
 /* The orange square — YC's visual signature, used as a section marker */
@@ -58,12 +86,16 @@ body {
   font-size: 0.95rem;
   padding: 0.65rem 1.4rem;
   border-radius: 6px;
-  transition: background 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   cursor: pointer;
 }
 
 .btn:hover {
   background: var(--orange-dark);
+}
+
+.btn:active {
+  background: #b84109;
 }
 
 .btn:disabled {
@@ -96,11 +128,17 @@ body {
   padding: 0.6rem 0.85rem;
   font-size: 0.95rem;
   background: var(--bg);
+  color: var(--ink);
   transition: border-color 0.15s ease;
 }
 
-.field:focus {
-  outline: none;
+.field:hover {
+  border-color: #d6d0c4;
+}
+
+/* Colour alone isn't the focus signal — the shared outline rule above applies
+   here too, so the border change is reinforcement rather than the only cue. */
+.field:focus-visible {
   border-color: var(--orange);
 }
 
@@ -132,5 +170,12 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .fade-up {
     animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

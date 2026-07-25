@@ -60,26 +60,26 @@ export function OnboardingForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="full_name">Name</label>
-          <input id="full_name" required className="field" value={form.full_name} onChange={set("full_name")} />
+          <input id="full_name" required autoComplete="name" className="field" value={form.full_name} onChange={set("full_name")} />
         </div>
         <div>
           <label className="label" htmlFor="location">Location</label>
-          <input id="location" className="field" placeholder="Berkeley, CA" value={form.location} onChange={set("location")} />
+          <input id="location" autoComplete="address-level2" className="field" placeholder="Berkeley, CA" value={form.location} onChange={set("location")} />
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="startup_name">Startup / project</label>
-          <input id="startup_name" className="field" value={form.startup_name} onChange={set("startup_name")} />
+          <input id="startup_name" autoComplete="organization" className="field" value={form.startup_name} onChange={set("startup_name")} />
         </div>
         <div>
           <label className="label" htmlFor="linkedin_url">LinkedIn (optional)</label>
-          <input id="linkedin_url" className="field" placeholder="https://linkedin.com/in/…" value={form.linkedin_url} onChange={set("linkedin_url")} />
+          <input id="linkedin_url" type="url" inputMode="url" spellCheck={false} autoComplete="url" className="field" placeholder="https://linkedin.com/in/…" value={form.linkedin_url} onChange={set("linkedin_url")} />
         </div>
       </div>
       <div>
         <label className="label" htmlFor="one_liner">One-liner</label>
-        <input id="one_liner" className="field" placeholder="What are you building, in a sentence?" value={form.one_liner} onChange={set("one_liner")} />
+        <input id="one_liner" className="field" placeholder="What are you building, in a sentence?…" value={form.one_liner} onChange={set("one_liner")} />
       </div>
       <div>
         <label className="label" htmlFor="bio">About you</label>
@@ -92,7 +92,11 @@ export function OnboardingForm({
       <button type="submit" disabled={saving} className="btn w-full">
         {saving ? "Saving…" : role === "student" ? "Save and verify" : "Save profile"}
       </button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" aria-live="polite" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
     </form>
   )
 }

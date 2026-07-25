@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     default: "Startup School Hub — schedules, students, answers",
     template: "%s — Startup School Hub",
   },
+  themeColor: "#ffffff",
   description:
     "A community hub for YC Startup School participants: every session (including the ones you'd miss), a directory of fellow students, and answers about who's building what. Made by Syed Rayyan Ali — not affiliated with Y Combinator.",
 }

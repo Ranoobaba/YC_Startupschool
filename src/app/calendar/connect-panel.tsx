@@ -114,8 +114,12 @@ export function ConnectPanel({
             </button>
           </div>
         </div>
-        {message && <p className="mt-3 text-sm text-green-700">{message}</p>}
-        {problem && <p className="mt-3 text-sm text-red-600">{problem}</p>}
+        {message && (
+          <p aria-live="polite" className="mt-3 text-sm text-green-700">{message}</p>
+        )}
+        {problem && (
+          <p role="alert" aria-live="polite" className="mt-3 text-sm text-red-600">{problem}</p>
+        )}
       </div>
     )
   }
@@ -160,8 +164,12 @@ export function ConnectPanel({
           upload the .ics file from inside the .zip.
         </p>
       )}
-      {message && <p className="mt-3 text-sm text-green-700">{message}</p>}
-      {problem && <p className="mt-3 text-sm text-red-600">{problem}</p>}
+      {message && (
+          <p aria-live="polite" className="mt-3 text-sm text-green-700">{message}</p>
+        )}
+      {problem && (
+          <p role="alert" aria-live="polite" className="mt-3 text-sm text-red-600">{problem}</p>
+        )}
     </div>
   )
 }

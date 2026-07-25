@@ -78,7 +78,7 @@ function SessionCard({ s, assigned }: { s: ScheduleSession; assigned: boolean })
       }`}
     >
       <div className="flex items-start justify-between gap-3">
-        <h4 className="leading-snug font-bold">{cleanTitle(s)}</h4>
+        <h4 className="min-w-0 leading-snug font-bold text-balance">{cleanTitle(s)}</h4>
         {assigned && (
           <span className="shrink-0 rounded-full bg-orange px-2 py-0.5 text-[11px] font-bold tracking-wide text-white uppercase">
             Yours
@@ -114,7 +114,7 @@ function Round({ sessions }: { sessions: ScheduleSession[] }) {
           <span className="sq" aria-hidden />
           {label || cleanTitle(sessions[0])}
         </h3>
-        <span className="font-mono text-[13px] text-muted">
+        <span className="tnum font-mono text-[13px] text-muted">
           {timeRange(sessions[0])}
         </span>
       </div>
@@ -227,7 +227,7 @@ export default async function SchedulePage() {
               <ul className="mt-3 space-y-1.5">
                 {(logisticsByDay.get(day) ?? []).map((l) => (
                   <li key={l.id} className="flex gap-3 text-[14px]">
-                    <span className="w-20 shrink-0 font-mono text-[12px] text-muted">
+                    <span className="tnum w-20 shrink-0 font-mono text-[12px] text-muted">
                       {fmt(new Date(l.starts_at!))}
                     </span>
                     <span className="text-muted">{l.title}</span>

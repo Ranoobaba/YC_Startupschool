@@ -53,7 +53,7 @@ export function VerifyForm() {
       </button>
       {message && (
         <p
-          role="status"
+          role="status" aria-live="polite"
           className={`mt-3 text-sm ${
             state === "approved"
               ? "text-green-700"

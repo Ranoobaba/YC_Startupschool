@@ -54,7 +54,7 @@ export function SubmitSessionForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="s-link">Link (optional)</label>
-          <input id="s-link" className="field" placeholder="https://…" value={form.link}
+          <input id="s-link" type="url" inputMode="url" spellCheck={false} className="field" placeholder="https://…" value={form.link}
             onChange={(e) => setForm({ ...form, link: e.target.value })} />
         </div>
         <div>
@@ -70,7 +70,7 @@ export function SubmitSessionForm() {
         {state === "sending" ? "Submitting…" : state === "done" ? "Submitted" : "Submit for review"}
       </button>
       {message && (
-        <p role="status" className={`text-sm ${state === "error" ? "text-red-600" : "text-muted"}`}>
+        <p role="status" aria-live="polite" className={`text-sm ${state === "error" ? "text-red-600" : "text-muted"}`}>
           {message}
         </p>
       )}

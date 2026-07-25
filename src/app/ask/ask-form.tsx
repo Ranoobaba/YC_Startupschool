@@ -45,7 +45,7 @@ export function AskForm() {
         <input
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Who's building in fintech?"
+          placeholder="Who's building in fintech?…"
           className="field flex-1"
           aria-label="Your question"
         />
@@ -54,10 +54,14 @@ export function AskForm() {
         </button>
       </form>
 
-      {state === "error" && <p className="text-sm text-red-600">{error}</p>}
+      {state === "error" && (
+        <p role="alert" aria-live="polite" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       {answer && (
-        <div className="card">
+        <div className="card" aria-live="polite">
           <p className="whitespace-pre-wrap">{answer}</p>
         </div>
       )}
