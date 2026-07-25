@@ -2,13 +2,16 @@
 
 :root {
   --bg: #ffffff;
-  --bg-warm: #fbf9f6;
-  --ink: #16140f;
-  --muted: #6f6a60;
-  --line: #e8e4dc;
+  /* Near-neutral rather than beige: the warm cast was muddying every surface. */
+  --bg-warm: #f7f7f6;
+  --ink: #0f0f0f;
+  /* Was #6f6a60 (~4.6:1) which read as washed out. This is ~7:1 on white, so
+     secondary text is comfortably legible rather than only just compliant. */
+  --muted: #56544f;
+  --line: #e2e0dc;
   --orange: #fb651e;
-  --orange-dark: #d94f0e;
-  --orange-soft: #fff1e9;
+  --orange-dark: #c9490b;
+  --orange-soft: #fff2ea;
 
   /* Tells the browser to render native controls and scrollbars for a light
      surface, which fixes washed-out selects and inputs on Windows. */

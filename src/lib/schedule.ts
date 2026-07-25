@@ -135,11 +135,38 @@ export function monthMatrix(year: number, month: number): Date[][] {
   return weeks
 }
 
-export function timeLabel(iso: string): string {
+// Time formatting lives here, not in pages: the conversion was previously
+// duplicated across two pages and only one got fixed, leaving every slot on
+// the other seven hours out. The event runs in San Francisco; the server runs
+// in UTC, so every rendered time must name the zone explicitly.
+export const EVENT_TZ = "America/Los_Angeles"
+
+export function clockTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    timeZone: EVENT_TZ,
   })
+}
+
+export function dayLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: EVENT_TZ,
+  })
+}
+
+export function timeRangeLabel(
+  startsAt: string | null,
+  endsAt: string | null,
+  recurrence = ""
+): string {
+  if (!startsAt) return recurrence || "Time TBA"
+  return endsAt
+    ? `${clockTime(startsAt)} – ${clockTime(endsAt)}`
+    : clockTime(startsAt)
 }
 
 /**

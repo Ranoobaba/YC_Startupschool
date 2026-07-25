@@ -26,11 +26,14 @@ export function ConnectPanel({
   googleEnabled,
   justConnected,
   error,
+  compact = false,
 }: {
   connection: Connection | null
   googleEnabled: boolean
   justConnected: string | null
   error: string | null
+  /** Already contributing sessions: shrink to a status bar so the schedule leads. */
+  compact?: boolean
 }) {
   const router = useRouter()
   const [busy, setBusy] = useState("")
@@ -81,15 +84,23 @@ export function ConnectPanel({
 
   if (connection) {
     return (
-      <div className="card">
+      <div
+        className={
+          compact
+            ? "flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-bg-warm px-4 py-2.5"
+            : "card"
+        }
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="font-semibold">
+          <div className="min-w-0">
+            <p className={compact ? "text-sm font-medium" : "font-semibold"}>
               {connection.provider === "google"
                 ? `Google Calendar connected${connection.google_email ? ` · ${connection.google_email}` : ""}`
                 : "Calendar file uploaded"}
             </p>
-            <p className="mt-0.5 text-sm text-muted">
+            <p
+              className={`mt-0.5 text-muted ${compact ? "text-[13px]" : "text-sm"}`}
+            >
               {connection.event_count} Startup School events
               {connection.last_synced_at &&
                 ` · updated ${new Date(connection.last_synced_at).toLocaleDateString()}`}

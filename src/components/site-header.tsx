@@ -26,12 +26,6 @@ export async function SiteHeader() {
             Schedule
           </Link>
           <Link
-            href="/calendar"
-            className="hidden text-muted transition-colors hover:text-ink sm:inline"
-          >
-            My calendar
-          </Link>
-          <Link
             href="/ask"
             className="text-muted transition-colors hover:text-ink"
           >

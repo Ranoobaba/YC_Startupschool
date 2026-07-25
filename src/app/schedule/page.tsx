@@ -1,226 +1,238 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 
 import { Locked } from "@/components/locked"
 import { getCurrentUser, isVerified } from "@/lib/auth"
+import { googleConfigured } from "@/lib/calendar/google"
 import {
+  clockTime,
   clusterByTime,
+  dayLabel,
   getSchedule,
   isLogistics,
+  timeRangeLabel,
   type ScheduleSession,
 } from "@/lib/schedule"
+import { supabaseAdmin } from "@/lib/supabase/server"
 
+import { ConnectPanel } from "../calendar/connect-panel"
 import { SubmitSessionForm } from "./submit-form"
 
 export const metadata: Metadata = {
   title: "Schedule",
   description:
-    "Every round, the session you were assigned, and what else is running at the same time.",
+    "Your assigned sessions and every alternative running at the same time.",
 }
 
-const TYPE_NOTE: Record<string, string> = {
-  arena: "Stadium talk · thousands of people, on headphones",
-  suite: "Suite session · capacity-limited, meet a YC partner",
-  symposium: "Symposium · capacity-limited, talk to people directly",
+const FORMAT_NOTE: Record<string, string> = {
+  arena: "Stadium talk, on headphones",
+  suite: "Small suite session with a YC partner",
+  symposium: "Poster session — talk to people directly",
 }
 
-// The event runs in San Francisco and the server runs in UTC, so times must be
-// pinned to the venue's zone — otherwise every slot renders seven hours out.
-const EVENT_TZ = "America/Los_Angeles"
-
-const fmt = (d: Date) =>
-  d.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: EVENT_TZ,
-  })
-
-function timeRange(s: ScheduleSession): string {
-  if (!s.starts_at) return s.recurrence || "Time TBA"
-  const start = new Date(s.starts_at)
-  return s.ends_at ? `${fmt(start)} – ${fmt(new Date(s.ends_at))}` : fmt(start)
-}
-
-function dayHeading(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    timeZone: EVENT_TZ,
-  })
-}
-
-/** Strips the "[Round 1] Arena Breakout:" prefix YC puts on invite titles. */
-function cleanTitle(s: ScheduleSession): string {
+/** Strips the "[Round 1] Arena Breakout:" prefix from YC invite titles. */
+function displayName(s: ScheduleSession): string {
   if (s.speaker) return s.speaker
-  return s.title.replace(/^\[round \d+\]\s*/i, "").replace(/^arena breakout:\s*/i, "")
+  return s.title
+    .replace(/^\[round \d+\]\s*/i, "")
+    .replace(/^arena breakout:\s*/i, "")
+    .trim()
 }
 
-function subtitleOf(s: ScheduleSession): string {
+function subtitle(s: ScheduleSession): string {
   if (s.speaker_title) return s.speaker_title
   const m = s.title.match(/\(([^)]+)\)/)
   return m ? m[1] : ""
 }
 
-function venueOf(s: ScheduleSession): string {
-  return s.venue || ""
+function roundName(sessions: ScheduleSession[]): string {
+  const explicit = sessions.find((s) => s.round_label)?.round_label
+  if (explicit) return explicit
+  const fromTitle = sessions
+    .map((s) => s.title.match(/\[(round \d+)\]/i)?.[1])
+    .find(Boolean)
+  return fromTitle ? fromTitle.replace(/^\w/, (c) => c.toUpperCase()) : ""
 }
 
-function SessionCard({ s, assigned }: { s: ScheduleSession; assigned: boolean }) {
-  const note = TYPE_NOTE[s.session_type ?? ""] ?? ""
-  const subtitle = subtitleOf(s)
-  const venue = venueOf(s)
+/**
+ * One option within a round. Every option renders identically apart from the
+ * marker, so the comparison is like-for-like rather than yours-then-the-rest.
+ */
+function Option({ s }: { s: ScheduleSession }) {
+  const note = FORMAT_NOTE[s.session_type] ?? ""
+  const sub = subtitle(s)
 
   return (
     <div
-      className={`rounded-lg border p-4 transition-colors ${
-        assigned ? "border-orange bg-orange-soft" : "border-line hover:border-ink/25"
+      className={`flex flex-col rounded-lg border p-4 ${
+        s.mine
+          ? "border-orange bg-orange-soft"
+          : "border-line bg-bg hover:border-ink/30"
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <h4 className="min-w-0 leading-snug font-bold text-balance">{cleanTitle(s)}</h4>
-        {assigned && (
-          <span className="shrink-0 rounded-full bg-orange px-2 py-0.5 text-[11px] font-bold tracking-wide text-white uppercase">
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="min-w-0 text-[17px] leading-tight font-bold break-words">
+          {displayName(s)}
+        </h4>
+        {s.mine && (
+          <span className="shrink-0 rounded-full bg-orange px-2 py-0.5 text-[10px] font-bold tracking-[0.06em] text-white uppercase">
             Yours
           </span>
         )}
       </div>
-      {subtitle && <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>}
-      {venue && (
-        <p className="mt-2.5 font-mono text-[12px] tracking-wide uppercase">{venue}</p>
-      )}
-      {note && <p className="mt-1 text-[13px] text-muted">{note}</p>}
+
+      {sub && <p className="mt-1 text-[13px] leading-snug text-muted">{sub}</p>}
+
+      <div className="mt-auto pt-3">
+        {s.venue && (
+          <p className="font-mono text-[11px] font-medium tracking-[0.06em] uppercase">
+            {s.venue}
+          </p>
+        )}
+        {note && <p className="mt-0.5 text-[12px] text-muted">{note}</p>}
+      </div>
     </div>
   )
 }
 
 function Round({ sessions }: { sessions: ScheduleSession[] }) {
-  const assigned = sessions.filter((s) => s.mine)
-  const alternatives = sessions.filter((s) => !s.mine)
-  const label =
-    sessions.find((s) => s.round_label)?.round_label ||
-    sessions.find((s) => /\[round \d+\]/i.test(s.title))?.title.match(/\[(round \d+)\]/i)?.[1] ||
-    ""
+  const label = roundName(sessions)
+  const mine = sessions.filter((s) => s.mine)
+  const others = sessions.filter((s) => !s.mine)
+  // Yours first, so the comparison starts from what you were given.
+  const ordered = [...mine, ...others]
 
-  const intimate = assigned.some(
-    (s) => s.session_type === "suite" || s.session_type === "symposium" ||
-      /symposium|suite/i.test(`${s.title} ${s.venue}`)
+  const tradeOff = mine.some(
+    (s) => s.session_type === "suite" || s.session_type === "symposium"
   )
 
   return (
-    <section className="rounded-xl border border-line p-5">
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="flex items-center gap-2.5 font-bold tracking-tight capitalize">
+    <section>
+      <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h3 className="flex items-center gap-2 text-[15px] font-bold">
           <span className="sq" aria-hidden />
-          {label || cleanTitle(sessions[0])}
+          {label || displayName(sessions[0])}
         </h3>
-        <span className="tnum font-mono text-[13px] text-muted">
-          {timeRange(sessions[0])}
+        <span className="tnum font-mono text-[12px] text-muted">
+          {timeRangeLabel(sessions[0].starts_at, sessions[0].ends_at)}
         </span>
       </div>
 
-      {assigned.length > 0 && (
-        <div className="grid gap-3">
-          {assigned.map((s) => (
-            <SessionCard key={s.id} s={s} assigned />
-          ))}
-        </div>
-      )}
+      <div
+        className={`grid gap-3 ${
+          ordered.length > 2
+            ? "sm:grid-cols-3"
+            : ordered.length === 2
+              ? "sm:grid-cols-2"
+              : ""
+        }`}
+      >
+        {ordered.map((s) => (
+          <Option key={s.id} s={s} />
+        ))}
+      </div>
 
-      {alternatives.length > 0 && (
-        <>
-          <p className="mt-4 mb-2 font-mono text-[12px] tracking-[0.1em] text-muted uppercase">
-            {assigned.length > 0
-              ? `Or walk into instead (${alternatives.length})`
-              : `Running at this time (${alternatives.length})`}
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {alternatives.map((s) => (
-              <SessionCard key={s.id} s={s} assigned={false} />
-            ))}
-          </div>
-        </>
-      )}
-
-      {intimate && alternatives.length > 0 && (
-        <p className="mt-4 border-l-2 border-orange pl-3 text-[13px] text-muted">
-          Your session here is capacity-limited and intimate — direct access to a
-          YC partner and the other people in the room. The alternatives are
-          multi-thousand-person stadium talks. Swapping trades small-group access
-          for a big-name stage.
+      {tradeOff && others.length > 0 && (
+        <p className="mt-2.5 border-l-2 border-orange pl-3 text-[13px] text-muted">
+          Yours is capacity-limited — direct access to a YC partner and the
+          people in the room. The alternatives are multi-thousand-person stadium
+          talks.
         </p>
       )}
     </section>
   )
 }
 
-export default async function SchedulePage() {
+export default async function SchedulePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ connected?: string; error?: string }>
+}) {
   const { user, profile } = await getCurrentUser()
   if (!isVerified(profile)) {
     return <Locked pending={profile?.status === "pending"} />
   }
 
-  const all = await getSchedule(user?.id ?? null)
+  const params = await searchParams
+  const admin = supabaseAdmin()
+
+  const [all, { data: connection }] = await Promise.all([
+    getSchedule(user?.id ?? null),
+    admin
+      .from("calendar_connections")
+      .select("provider, google_email, last_synced_at, event_count")
+      .eq("user_id", user?.id ?? "")
+      .maybeSingle(),
+  ])
+
   const sessions = all.filter((s) => !isLogistics(s))
   const logistics = all.filter((s) => isLogistics(s) && s.starts_at)
   const clusters = clusterByTime(sessions)
 
   const days = new Map<string, ScheduleSession[][]>()
-  for (const cluster of clusters) {
-    const key = dayHeading(cluster[0].starts_at!)
+  for (const c of clusters) {
+    const key = dayLabel(c[0].starts_at!)
     if (!days.has(key)) days.set(key, [])
-    days.get(key)!.push(cluster)
+    days.get(key)!.push(c)
   }
 
   const logisticsByDay = new Map<string, ScheduleSession[]>()
   for (const l of logistics) {
-    const key = dayHeading(l.starts_at!)
+    const key = dayLabel(l.starts_at!)
     if (!logisticsByDay.has(key)) logisticsByDay.set(key, [])
     logisticsByDay.get(key)!.push(l)
   }
 
   const mineCount = all.filter((s) => s.mine).length
-  const choices = clusters.filter((c) => c.length > 1).length
+  const withChoices = clusters.filter((c) => c.length > 1).length
 
   return (
-    <div className="fade-up mx-auto max-w-3xl space-y-12 pt-4">
+    <div className="fade-up mx-auto max-w-4xl space-y-10 pt-4">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Schedule</h1>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Your potential schedule
+        </h1>
         <p className="mt-2 max-w-2xl text-muted">
-          Your badge isn&apos;t checked at the door, so every round is a choice.
-          Yours is marked — the rest is what you could walk into instead.
-          {choices > 0 && ` ${choices} rounds have alternatives.`}
+          Nobody checks your badge at the door. Each round shows what you were
+          assigned alongside everything else running at that time, so you can
+          pick rather than follow.
+          {withChoices > 0 && (
+            <>
+              {" "}
+              <strong className="text-ink">
+                {withChoices} {withChoices === 1 ? "round has" : "rounds have"}{" "}
+                alternatives.
+              </strong>
+            </>
+          )}
         </p>
-        {mineCount === 0 && (
-          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-lg bg-orange-soft px-4 py-3">
-            <p className="flex-1 text-[15px]">
-              Connect your calendar and we&apos;ll mark which session is yours in
-              each round.
-            </p>
-            <Link href="/calendar" className="btn px-4 py-1.5 text-sm">
-              Upload your schedule
-            </Link>
-          </div>
-        )}
       </header>
+
+      <ConnectPanel
+        connection={connection ?? null}
+        googleEnabled={googleConfigured()}
+        justConnected={params.connected ?? null}
+        error={params.error ?? null}
+        compact={mineCount > 0}
+      />
 
       {days.size === 0 && (
         <p className="text-muted">
-          Nothing scheduled yet. Connect a calendar or add a session below.
+          Nothing scheduled yet. Connect your calendar above, or add a session
+          at the bottom of this page.
         </p>
       )}
 
       {[...days.entries()].map(([day, rounds]) => (
-        <div key={day}>
-          <h2 className="mb-4 text-xl font-bold tracking-tight">{day}</h2>
-          <div className="space-y-4">
-            {rounds.map((cluster, i) => (
-              <Round key={i} sessions={cluster} />
-            ))}
-          </div>
+        <div key={day} className="space-y-6">
+          <h2 className="border-b border-line pb-2 text-xl font-bold tracking-tight">
+            {day}
+          </h2>
+          {rounds.map((cluster, i) => (
+            <Round key={i} sessions={cluster} />
+          ))}
 
           {(logisticsByDay.get(day) ?? []).length > 0 && (
-            <details className="mt-4 rounded-lg border border-line px-4 py-3">
+            <details className="rounded-lg border border-line px-4 py-3">
               <summary className="cursor-pointer font-mono text-[12px] tracking-[0.08em] text-muted uppercase">
                 Timings and breaks ({(logisticsByDay.get(day) ?? []).length})
               </summary>
@@ -228,7 +240,7 @@ export default async function SchedulePage() {
                 {(logisticsByDay.get(day) ?? []).map((l) => (
                   <li key={l.id} className="flex gap-3 text-[14px]">
                     <span className="tnum w-20 shrink-0 font-mono text-[12px] text-muted">
-                      {fmt(new Date(l.starts_at!))}
+                      {clockTime(l.starts_at!)}
                     </span>
                     <span className="text-muted">{l.title}</span>
                   </li>
@@ -239,7 +251,7 @@ export default async function SchedulePage() {
         </div>
       ))}
 
-      <section>
+      <section className="border-t border-line pt-8">
         <h2 className="mb-4 flex items-center gap-2.5 text-xl font-bold tracking-tight">
           <span className="sq" aria-hidden />
           Found a session we&apos;re missing?

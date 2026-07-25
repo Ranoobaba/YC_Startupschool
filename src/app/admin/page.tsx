@@ -109,10 +109,21 @@ export default async function AdminPage() {
                     {s.track} · {s.recurrence || "time TBA"}
                   </span>
                 </div>
-                {s.description && <p className="mt-1 text-[15px] text-muted">{s.description}</p>}
+                {s.description && (
+                  <p className="mt-1 line-clamp-2 text-[15px] text-muted">
+                    {s.description}
+                  </p>
+                )}
                 {s.link && (
-                  <a href={s.link} className="text-sm text-orange-dark hover:underline">
-                    {s.link}
+                  // Calendar invite URLs run to hundreds of characters with no
+                  // break opportunities, so show a label rather than the URL.
+                  <a
+                    href={s.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-block text-sm font-medium text-orange-dark hover:underline"
+                  >
+                    Open link ↗
                   </a>
                 )}
                 <form action={reviewSession} className="mt-3 flex gap-2">
