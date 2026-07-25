@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #ffffff;
+  --bg-warm: #fbf9f6;
+  --ink: #16140f;
+  --muted: #6f6a60;
+  --line: #e8e4dc;
+  --orange: #fb651e;
+  --orange-dark: #d94f0e;
+  --orange-soft: #fff1e9;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-warm: var(--bg-warm);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-orange: var(--orange);
+  --color-orange-dark: var(--orange-dark);
+  --color-orange-soft: var(--orange-soft);
+  --font-sans: var(--font-figtree);
+  --font-mono: var(--font-plex-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-figtree), system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--orange);
+  color: #fff;
+}
+
+/* The orange square — YC's visual signature, used as a section marker */
+.sq {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: var(--orange);
+  flex-shrink: 0;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--orange);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: var(--orange-dark);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--line);
+}
+
+.btn-outline:hover {
+  background: var(--bg-warm);
+  border-color: var(--ink);
+}
+
+.card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.field {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.95rem;
+  background: var(--bg);
+  transition: border-color 0.15s ease;
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--orange);
+}
+
+.label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fade-up 0.5s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up {
+    animation: none;
+  }
+}
