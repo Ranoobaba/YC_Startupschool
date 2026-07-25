@@ -1,8 +1,12 @@
 import type { RawEvent } from "./types"
 
-// Read-only, events-only. This is the narrowest Calendar scope that still lets
-// us read invite details, which matters: Google reviews the scope you ask for.
-export const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events.readonly"
+// Read-only, events-only: the narrowest Calendar scope that still lets us read
+// invite details, which matters because Google reviews exactly what you ask for.
+// userinfo.email is non-sensitive and only used to label which account is linked.
+export const GOOGLE_SCOPE = [
+  "https://www.googleapis.com/auth/calendar.events.readonly",
+  "https://www.googleapis.com/auth/userinfo.email",
+].join(" ")
 
 export function googleConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
