@@ -18,6 +18,9 @@ export default clerkMiddleware(async (auth, request) => {
 })
 
 export const config = {
+  // Clerk needs CLERK_SECRET_KEY at runtime; the edge runtime does not receive
+  // it, so the middleware runs on Node.
+  runtime: "nodejs",
   matcher: [
     // Everything except Next internals and static files, unless in a search param.
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
