@@ -2,10 +2,10 @@ import Link from "next/link"
 
 const FEATURES = [
   {
-    title: "The full schedule",
-    body: "Every standard Startup School session track in one calendar — plus the hidden ones: office hours, pop-up group sessions, and deadline windows that students usually find out about too late.",
-    href: "/schedule",
-    cta: "Browse sessions",
+    title: "The schedule builds itself",
+    body: "YC drops sessions onto your Google Calendar automatically — but only the ones you were invited to. Connect yours and every student's invites combine into one schedule, so you see the sessions you were never told about.",
+    href: "/calendar",
+    cta: "Upload your schedule",
   },
   {
     title: "Student directory",
@@ -58,13 +58,17 @@ export default function Home() {
           you, and a way to ask who&apos;s building what.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/join" className="btn">
+          <Link href="/calendar" className="btn">
+            Upload your schedule
+          </Link>
+          <Link href="/join" className="btn btn-outline">
             Join the community
           </Link>
-          <Link href="/schedule" className="btn btn-outline">
-            See the schedule
-          </Link>
         </div>
+        <p className="mt-3 text-sm text-muted">
+          Connects to Google Calendar. Reads only your Startup School events —
+          nothing personal, nothing shared with your name on it.
+        </p>
       </section>
 
       <section className="grid gap-5 sm:grid-cols-3">

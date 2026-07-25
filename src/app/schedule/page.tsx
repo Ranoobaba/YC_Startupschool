@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import { Locked } from "@/components/locked"
 import { getCurrentUser, isVerified } from "@/lib/auth"
@@ -15,7 +16,7 @@ interface SchoolSession {
   title: string
   description: string
   track: "standard" | "hidden"
-  source: "curated" | "community"
+  source: "curated" | "community" | "calendar"
   starts_at: string | null
   recurrence: string
   link: string
@@ -55,6 +56,11 @@ function SessionList({ sessions }: { sessions: SchoolSession[] }) {
             {s.source === "community" && (
               <span className="rounded-full bg-orange-soft px-2.5 py-0.5 font-medium text-orange-dark">
                 community find
+              </span>
+            )}
+            {s.source === "calendar" && (
+              <span className="rounded-full bg-orange-soft px-2.5 py-0.5 font-medium text-orange-dark">
+                from calendars
               </span>
             )}
             {s.link && (
@@ -99,6 +105,15 @@ export default async function SchedulePage() {
           The standard session tracks, plus the ones that don&apos;t show up on
           the default calendar. Found one we&apos;re missing? Add it below.
         </p>
+        <div className="mt-5 flex flex-wrap items-center gap-3 rounded-lg bg-orange-soft px-4 py-3">
+          <p className="flex-1 text-[15px]">
+            Connect your Google Calendar and every student&apos;s YC invites
+            merge into this schedule automatically.
+          </p>
+          <Link href="/calendar" className="btn px-4 py-1.5 text-sm">
+            Upload your schedule
+          </Link>
+        </div>
       </header>
 
       <section>

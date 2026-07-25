@@ -64,7 +64,7 @@ create index verifications_user_idx on verifications (user_id);
 -- Sessions: the schedule. Curated rows come from admins; community rows from
 -- verified students and require admin approval before they appear.
 -- ---------------------------------------------------------------------------
-create type session_source as enum ('curated', 'community');
+create type session_source as enum ('curated', 'community', 'calendar');
 create type session_track as enum ('standard', 'hidden');
 
 create table school_sessions (
@@ -79,8 +79,17 @@ create table school_sessions (
   recurrence text not null default '',
   link text not null default '',
   submitted_by uuid,
+  -- Set for sessions discovered from student calendars. Stable across every
+  -- student who has the same invite, so it is the dedup key.
+  calendar_key text,
+  -- How many distinct students have this on their calendar. Internal only:
+  -- the UI never exposes it, it exists to drive the auto-publish threshold.
+  attendee_count int not null default 0,
   created_at timestamptz not null default now()
 );
+
+create unique index school_sessions_calendar_key_idx
+  on school_sessions (calendar_key) where calendar_key is not null;
 
 -- ---------------------------------------------------------------------------
 -- Vector retrieval helper for the RAG endpoint (used when embeddings exist).
@@ -132,3 +141,83 @@ create policy "users upload own screenshots" on storage.objects
 -- To promote yourself to admin after signing up, run:
 --   update profiles set role = 'admin', status = 'approved' where id = '<your-user-uuid>';
 -- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- Calendar sync. Students connect Google Calendar (or upload a .ics export);
+-- we extract ONLY Startup School events and drop everything personal.
+--
+-- Privacy model: aggregation is anonymous. calendar_events is per-student and
+-- readable only by that student; the public schedule shows that a session
+-- exists, never who has it on their calendar.
+-- ---------------------------------------------------------------------------
+create table calendar_connections (
+  user_id uuid primary key,
+  provider text not null check (provider in ('google', 'ics')),
+  google_email text not null default '',
+  refresh_token text,
+  last_synced_at timestamptz,
+  event_count int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create table calendar_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  -- iCalUID where available: identical across every attendee's copy of the
+  -- same invite, which is what makes cross-student corroboration work.
+  calendar_key text not null,
+  title text not null,
+  description text not null default '',
+  location text not null default '',
+  starts_at timestamptz,
+  ends_at timestamptz,
+  recurrence text not null default '',
+  link text not null default '',
+  organizer text not null default '',
+  provider text not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, calendar_key)
+);
+
+create index calendar_events_key_idx on calendar_events (calendar_key);
+create index calendar_events_user_idx on calendar_events (user_id);
+
+alter table calendar_connections enable row level security;
+alter table calendar_events enable row level security;
+
+create policy "own connection" on calendar_connections
+  for select using (auth.uid() = user_id);
+create policy "own calendar events" on calendar_events
+  for select using (auth.uid() = user_id);
+
+-- Rolls per-student calendar rows up into the shared schedule. A session
+-- publishes automatically once two independent students have it; a single
+-- sighting stays unapproved and waits in the admin queue.
+create or replace function publish_calendar_sessions()
+returns void language plpgsql security definer as $$
+begin
+  insert into school_sessions (
+    title, description, track, source, approved,
+    starts_at, ends_at, recurrence, link, calendar_key, attendee_count
+  )
+  select
+    (array_agg(e.title order by e.created_at))[1],
+    coalesce((array_agg(nullif(e.description, '') order by e.created_at))[1], ''),
+    'hidden'::session_track,
+    'calendar'::session_source,
+    count(distinct e.user_id) >= 2,
+    min(e.starts_at),
+    min(e.ends_at),
+    coalesce((array_agg(nullif(e.recurrence, '') order by e.created_at))[1], ''),
+    coalesce((array_agg(nullif(e.link, '') order by e.created_at))[1], ''),
+    e.calendar_key,
+    count(distinct e.user_id)
+  from calendar_events e
+  group by e.calendar_key
+  on conflict (calendar_key) where calendar_key is not null do update set
+    attendee_count = excluded.attendee_count,
+    -- Never un-publish: an admin approval or an earlier threshold hit sticks.
+    approved = school_sessions.approved or excluded.approved,
+    starts_at = coalesce(school_sessions.starts_at, excluded.starts_at);
+end;
+$$;

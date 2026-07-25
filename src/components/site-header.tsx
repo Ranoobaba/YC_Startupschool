@@ -17,6 +17,9 @@ export async function SiteHeader() {
           <Link href="/schedule" className="text-muted transition-colors hover:text-ink">
             Schedule
           </Link>
+          <Link href="/calendar" className="text-muted transition-colors hover:text-ink">
+            My calendar
+          </Link>
           <Link href="/directory" className="text-muted transition-colors hover:text-ink">
             Directory
           </Link>
