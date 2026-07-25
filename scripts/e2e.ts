@@ -492,9 +492,8 @@ async function main() {
 
   const LOCKED = ["Almost in.", "Your verification is being reviewed"]
   const REAL_CONTENT: Record<string, string> = {
-    "/schedule": "Standard sessions",
-    "/ask": "Directory</h1>",
-    "/ask": "Ask the community.",
+    "/schedule": "Schedule</h1>",
+    "/ask": "People</h1>",
     "/calendar": "Your schedule, and everything around it.",
   }
 
