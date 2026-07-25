@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 
-import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/auth"
+import { supabaseAdmin } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
@@ -37,10 +38,7 @@ const VERDICT_SCHEMA = {
 }
 
 export async function POST(request: Request) {
-  const supabase = await supabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user } = await getCurrentUser()
   if (!user) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 })
   }

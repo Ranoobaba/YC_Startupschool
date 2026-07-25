@@ -1,3 +1,4 @@
+import {ClerkProvider} from "@clerk/nextjs";
 import type { Metadata } from "next"
 import { Figtree, IBM_Plex_Mono } from "next/font/google"
 
@@ -36,11 +37,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${figtree.variable} ${plexMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <SiteHeader />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-5 pt-10 pb-24 sm:px-8">
+        <ClerkProvider>
+          <SiteHeader />
+          <main className="mx-auto w-full max-w-5xl flex-1 px-5 pt-10 pb-24 sm:px-8">
           {children}
-        </main>
-        <SiteFooter />
+          </main>
+          <SiteFooter />
+        </ClerkProvider>
       </body>
     </html>
   )

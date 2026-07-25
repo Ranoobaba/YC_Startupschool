@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 
-import { isCompanyEmail } from "@/lib/auth"
+import { getCurrentUser, isCompanyEmail } from "@/lib/auth"
 import { embed } from "@/lib/retrieval"
-import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
 
@@ -14,10 +14,7 @@ function str(v: unknown, max = 500): string {
 // company email are approved immediately; students stay pending until their
 // acceptance screenshot passes verification.
 export async function POST(request: Request) {
-  const supabase = await supabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user } = await getCurrentUser()
   if (!user) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 })
   }
@@ -36,7 +33,7 @@ export async function POST(request: Request) {
   const role = existing?.role === "admin" ? "admin" : requestedRole
   let status = existing?.status ?? "pending"
   if (status !== "approved" && role === "founder") {
-    status = isCompanyEmail(user.email ?? "") ? "approved" : "pending"
+    status = isCompanyEmail(user.email) ? "approved" : "pending"
   }
 
   const fields = {

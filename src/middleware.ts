@@ -1,60 +1,27 @@
-import { NextResponse, type NextRequest } from "next/server"
-import { createServerClient } from "@supabase/ssr"
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 
-const GATED_PREFIXES = [
-  "/schedule", "/ask", "/admin", "/verify", "/calendar",
-]
+// Signed-in-only areas. Verification (is this person actually in the program?)
+// is enforced per page, since it needs the profile row, not just a session.
+const isGated = createRouteMatcher([
+  "/schedule(.*)",
+  "/ask(.*)",
+  "/admin(.*)",
+  "/verify(.*)",
+  "/calendar(.*)",
+  "/onboarding(.*)",
+])
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request })
-
-  // Without credentials there is no session to read; let the page render its
-  // own signed-out state rather than throwing inside middleware.
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
-    return response
+export default clerkMiddleware(async (auth, request) => {
+  if (isGated(request)) {
+    await auth.protect()
   }
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const path = request.nextUrl.pathname
-  const gated = GATED_PREFIXES.some((p) => path.startsWith(p))
-
-  if (gated && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/login"
-    url.searchParams.set("next", path)
-    return NextResponse.redirect(url)
-  }
-
-  return response
-}
+})
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
+  matcher: [
+    // Everything except Next internals and static files, unless in a search param.
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
+    "/__clerk/:path*",
+  ],
 }
