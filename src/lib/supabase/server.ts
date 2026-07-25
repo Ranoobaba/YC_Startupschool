@@ -2,6 +2,18 @@ import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
 
+/**
+ * Whether Supabase credentials are present. Checked before building a client so
+ * a missing env var degrades to a signed-out page instead of a 500 — the
+ * difference between a deployment that looks broken and one that looks empty.
+ */
+export function supabaseConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
+}
+
 // Cookie-based client: acts as the signed-in user, respects RLS.
 export async function supabaseServer() {
   const cookieStore = await cookies()

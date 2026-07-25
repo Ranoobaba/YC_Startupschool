@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/lib/supabase/server"
+import { supabaseConfigured, supabaseServer } from "@/lib/supabase/server"
 
 export type Role = "founder" | "student" | "admin"
 export type Status = "pending" | "approved" | "rejected"
@@ -17,19 +17,27 @@ export interface Profile {
 }
 
 export async function getCurrentUser() {
-  const supabase = await supabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { user: null, profile: null }
+  if (!supabaseConfigured()) return { user: null, profile: null }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
+  try {
+    const supabase = await supabaseServer()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return { user: null, profile: null }
 
-  return { user, profile: profile as Profile | null }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single()
+
+    return { user, profile: profile as Profile | null }
+  } catch {
+    // Unreachable database or bad credentials: render signed-out rather than
+    // failing the whole page.
+    return { user: null, profile: null }
+  }
 }
 
 export function isVerified(profile: Profile | null): boolean {

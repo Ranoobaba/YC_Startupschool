@@ -8,6 +8,15 @@ const GATED_PREFIXES = [
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request })
 
+  // Without credentials there is no session to read; let the page render its
+  // own signed-out state rather than throwing inside middleware.
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return response
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
