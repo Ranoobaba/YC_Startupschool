@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 
 const GATED_PREFIXES = [
-  "/schedule", "/directory", "/ask", "/admin", "/verify", "/calendar",
+  "/schedule", "/ask", "/admin", "/verify", "/calendar",
 ]
 
 export async function middleware(request: NextRequest) {

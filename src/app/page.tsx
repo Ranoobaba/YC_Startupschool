@@ -2,29 +2,29 @@ import Link from "next/link"
 
 const FEATURES = [
   {
+    title: "See every alternative",
+    body: "Your badge isn't checked at the door. Each round shows the session you were assigned next to everything else running at that exact time — so you decide, instead of following the itinerary.",
+    href: "/schedule",
+    cta: "See the rounds",
+  },
+  {
     title: "The schedule builds itself",
-    body: "YC drops sessions onto your Google Calendar automatically — but only the ones you were invited to. Connect yours and every student's invites combine into one schedule, so you see the sessions you were never told about.",
+    body: "YC puts sessions on your Google Calendar automatically — but only the ones you were assigned. Connect yours and everyone's invites combine into one programme, including sessions you were never told about.",
     href: "/calendar",
     cta: "Upload your schedule",
   },
   {
-    title: "Student directory",
-    body: "Every verified student and what they're building. Find a co-founder, a design partner, or the three other people in your city going through the program right now.",
-    href: "/directory",
-    cta: "Meet students",
-  },
-  {
-    title: "Ask the community",
-    body: "Ask in plain English — \"who's building in fintech?\", \"who needs a technical co-founder?\" — and get an answer sourced from real student profiles.",
+    title: "The people",
+    body: "Everyone here and what they're building. Browse them, or just ask — \"who's building in fintech?\", \"who needs a technical co-founder?\" Answers come from real profiles.",
     href: "/ask",
-    cta: "Ask a question",
+    cta: "Meet people",
   },
 ]
 
 const FAQ = [
   {
     q: "What is YC Startup School?",
-    a: "Y Combinator's free online program for founders: a video curriculum from YC partners, weekly group sessions with other founders, and a path to applying to the YC batch. It's the best free education for starting a startup — this hub exists to help you get the most out of it.",
+    a: "Y Combinator's free program for founders: a curriculum from YC partners, sessions with other founders, and a path to applying to the YC batch. It's the best free education for starting a startup — this hub exists to help you get the most out of it.",
   },
   {
     q: "What is this site, then?",
@@ -32,11 +32,11 @@ const FAQ = [
   },
   {
     q: "Why is it gated?",
-    a: "The directory and schedule are only useful if everyone in them is actually in the program. Students verify with their acceptance screenshot; founders join with their company email.",
+    a: "The schedule and the people are only useful if everyone here is actually in the program. Students verify with their acceptance screenshot; founders join with their company email.",
   },
   {
-    q: "What are “hidden sessions”?",
-    a: "Sessions that don't show up on the default schedule everyone sees: extra office hours, regional meetups, themed group sessions, and application deadline windows. Curated by us, submitted by students, reviewed before publishing.",
+    q: "Where do the alternatives come from?",
+    a: "Everyone gets assigned different sessions, so when attendees connect their calendars the combined invites cover the whole programme. Your assigned session is marked; the rest of each round is what you could walk into instead.",
   },
 ]
 
@@ -53,9 +53,8 @@ export default function Home() {
           <span className="text-orange">Especially the parts you&apos;d miss.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg text-muted">
-          The full session schedule — including the hidden ones — plus a
-          verified directory of the students going through the program with
-          you, and a way to ask who&apos;s building what.
+          Every round, the session you were assigned, and what else is running at
+          the same time — plus the people going through the program with you.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/calendar" className="btn">

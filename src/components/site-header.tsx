@@ -20,11 +20,8 @@ export async function SiteHeader() {
           <Link href="/calendar" className="text-muted transition-colors hover:text-ink">
             My calendar
           </Link>
-          <Link href="/directory" className="text-muted transition-colors hover:text-ink">
-            Directory
-          </Link>
           <Link href="/ask" className="text-muted transition-colors hover:text-ink">
-            Ask
+            People
           </Link>
           {profile?.role === "admin" && (
             <Link href="/admin" className="text-muted transition-colors hover:text-ink">

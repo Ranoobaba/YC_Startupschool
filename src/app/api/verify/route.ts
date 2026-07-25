@@ -13,6 +13,8 @@ const ALLOWED_TYPES = new Map<string, "image/png" | "image/jpeg" | "image/webp" 
   ["image/gif", "image/gif"],
 ])
 
+const MODEL = "claude-opus-5"
+
 const VERDICT_SCHEMA = {
   type: "object" as const,
   properties: {
@@ -71,56 +73,89 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to store screenshot" }, { status: 500 })
   }
 
-  const anthropic = new Anthropic()
-  const response = await anthropic.messages.create({
-    model: "claude-opus-5",
-    max_tokens: 2048,
-    system:
-      "You verify screenshots for a YC Startup School community site. " +
-      "Genuine acceptance evidence: an email from Y Combinator / Startup School " +
-      "(startupschool.org, ycombinator.com senders) welcoming the person to the " +
-      "current Startup School cohort, or a screenshot of the Startup School " +
-      "dashboard showing enrollment. Be skeptical: generic YC marketing emails, " +
-      "newsletter subscriptions, rejection emails, or obviously edited images do " +
-      "not count. When genuinely uncertain, set is_acceptance false with " +
-      "confidence below 0.5 so a human reviews it.",
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType,
-              data: bytes.toString("base64"),
-            },
-          },
-          {
-            type: "text",
-            text: "Does this screenshot show a genuine YC Startup School acceptance?",
-          },
-        ],
-      },
-    ],
-    output_config: {
-      format: { type: "json_schema", schema: VERDICT_SCHEMA },
-    },
-  })
+  // Every stored screenshot needs a verifications row: an upload with no row is
+  // an audit trail nobody can review. Any path that fails to reach a verdict
+  // parks the screenshot for an admin rather than dropping it on the floor.
+  const userId = user.id
+  async function parkForReview(reason: string) {
+    await admin.from("verifications").insert({
+      user_id: userId,
+      screenshot_path: path,
+      decision: "pending",
+      model: MODEL,
+      confidence: null,
+      reasoning: reason,
+    })
+    return NextResponse.json({
+      status: "pending",
+      reasoning:
+        "We couldn't automatically verify this screenshot. An admin will review it shortly.",
+    })
+  }
 
-  if (response.stop_reason === "refusal") {
-    return NextResponse.json(
-      { error: "Verification unavailable, try again later" },
-      { status: 502 }
+  // Retry transient overloads in-process; maxDuration gives us room for it.
+  const anthropic = new Anthropic({ maxRetries: 3 })
+  let response: Anthropic.Message
+  try {
+    response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 2048,
+      system:
+        "You verify screenshots for a YC Startup School community site. " +
+        "Genuine acceptance evidence: an email from Y Combinator / Startup School " +
+        "(startupschool.org, ycombinator.com senders) welcoming the person to the " +
+        "current Startup School cohort, or a screenshot of the Startup School " +
+        "dashboard showing enrollment. Be skeptical: generic YC marketing emails, " +
+        "newsletter subscriptions, rejection emails, or obviously edited images do " +
+        "not count. When genuinely uncertain, set is_acceptance false with " +
+        "confidence below 0.5 so a human reviews it.",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mediaType,
+                data: bytes.toString("base64"),
+              },
+            },
+            {
+              type: "text",
+              text: "Does this screenshot show a genuine YC Startup School acceptance?",
+            },
+          ],
+        },
+      ],
+      output_config: {
+        format: { type: "json_schema", schema: VERDICT_SCHEMA },
+      },
+    })
+  } catch (err) {
+    // Missing credentials, an overloaded API, a timeout: without this the throw
+    // escapes the route and Next returns a bodyless 500 the client can't parse.
+    return parkForReview(
+      `Verification error: ${err instanceof Error ? err.message : String(err)}`
     )
   }
 
+  if (response.stop_reason === "refusal") {
+    return parkForReview("Model declined to evaluate the screenshot.")
+  }
+
   const textBlock = response.content.find((b) => b.type === "text")
+  if (textBlock?.type !== "text") {
+    return parkForReview(
+      `No verdict returned (stop_reason: ${response.stop_reason}).`
+    )
+  }
+
   let verdict: { is_acceptance: boolean; confidence: number; reasoning: string }
   try {
-    verdict = JSON.parse(textBlock?.type === "text" ? textBlock.text : "{}")
+    verdict = JSON.parse(textBlock.text)
   } catch {
-    return NextResponse.json({ error: "Verification failed" }, { status: 502 })
+    return parkForReview("Model returned a verdict that could not be parsed.")
   }
 
   const approved = verdict.is_acceptance && verdict.confidence >= 0.5

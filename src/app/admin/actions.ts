@@ -38,7 +38,7 @@ export async function addStudent(formData: FormData) {
     ...(embedding ? { embedding } : {}),
   })
   revalidatePath("/admin")
-  revalidatePath("/directory")
+  revalidatePath("/ask")
 }
 
 export async function reviewVerification(formData: FormData) {
