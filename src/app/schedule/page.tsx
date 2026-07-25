@@ -24,8 +24,16 @@ const TYPE_NOTE: Record<string, string> = {
   symposium: "Symposium · capacity-limited, talk to people directly",
 }
 
+// The event runs in San Francisco and the server runs in UTC, so times must be
+// pinned to the venue's zone — otherwise every slot renders seven hours out.
+const EVENT_TZ = "America/Los_Angeles"
+
 const fmt = (d: Date) =>
-  d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+  d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: EVENT_TZ,
+  })
 
 function timeRange(s: ScheduleSession): string {
   if (!s.starts_at) return s.recurrence || "Time TBA"
@@ -38,6 +46,7 @@ function dayHeading(iso: string): string {
     weekday: "long",
     month: "long",
     day: "numeric",
+    timeZone: EVENT_TZ,
   })
 }
 
