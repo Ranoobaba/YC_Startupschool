@@ -12,8 +12,14 @@ const isGated = createRouteMatcher([
 ])
 
 export default clerkMiddleware(async (auth, request) => {
-  if (isGated(request)) {
-    await auth.protect()
+  if (!isGated(request)) return
+
+  // Redirect explicitly rather than calling auth.protect(): protect() answers a
+  // signed-out request with 404, which reads as "this page doesn't exist"
+  // instead of "sign in to see it".
+  const { userId, redirectToSignIn } = await auth()
+  if (!userId) {
+    return redirectToSignIn({ returnBackUrl: request.url })
   }
 })
 
