@@ -32,6 +32,14 @@ export async function GET(request: Request) {
   const tokens = await exchangeCode(code, origin)
   if (!tokens.access_token) return fail("token_exchange")
 
+  // Google's consent screen lets people approve sign-in while leaving the
+  // calendar permission unticked. Without this check the sync runs, gets a 403,
+  // and reports "0 events" — which reads as an empty calendar rather than a
+  // permission that was never granted.
+  if (!(tokens.scope ?? "").includes("calendar.events.readonly")) {
+    return fail("missing_calendar_scope")
+  }
+
   const [email, events] = await Promise.all([
     googleAccountEmail(tokens.access_token),
     fetchGoogleEvents(tokens.access_token),

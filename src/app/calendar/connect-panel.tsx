@@ -15,6 +15,8 @@ const ERRORS: Record<string, string> = {
     "Google Calendar isn't set up on this deployment yet — upload a .ics export instead.",
   declined: "You declined the Google permission, so nothing was read.",
   bad_state: "That sign-in link expired. Try connecting again.",
+  missing_calendar_scope:
+    "Google didn't grant calendar access. On the permission screen, tick the box for seeing your calendar events — it isn't checked by default — then connect again.",
   token_exchange: "Google wouldn't complete the connection. Try again.",
   not_verified: "Verified members only.",
 }

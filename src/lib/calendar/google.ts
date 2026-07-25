@@ -35,6 +35,7 @@ export function consentUrl(origin: string, state: string): string {
 interface TokenResponse {
   access_token?: string
   refresh_token?: string
+  scope?: string
   error?: string
 }
 
